@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.enjoytrip.trip.model.mapper.TripMapper">
+
+<resultMap type="tripDto" id="tripDtoMap">
+	<result column="no" property="no"></result>
+	<result column="title" property="title"></result>
+	<result column="first_image1" property="image"></result>
+	<result column="latitude" property="latitude"></result>
+	<result column="longitude" property="longitude"></result>
+	<result column="addr1" property="addr"></result>
+</resultMap>
+
+<resultMap type="sidoDto" id="sidoDtoMap">
+	<result column="sido_code" property="sidoCode"></result>
+	<result column="sido_name" property="sidoName"></result>
+</resultMap>
+
+<resultMap type="gugunDto" id="gugunDtoMap">
+	<result column="gugun_code" property="gugunCode"></result>
+	<result column="gugun_name" property="gugunName"></result>
+</resultMap>
+
+<resultMap type="categoryDto" id="categoryDtoMap">
+	<result column="content_type_id" property="id"></result>
+	<result column="content_type_name" property="name"></result>
+</resultMap>
+
+<select id="listTrip" parameterType="tripRequestDto" resultMap="tripDtoMap">
+	select no, title, first_image1, latitude, longitude, addr1 from attractions
+	where 1=1
+	<if test="sidoCode != null">
+	and area_code = #{sidoCode}
+	</if>
+	<if test="gugunCode != null">
+	and si_gun_gu_code = #{gugunCode}
+	</if>
+	<if test="category != null">
+	and content_type_id = #{category}
+	</if>
+	<if test="keyword != null and keyword != ''">
+	and title like concat('%', #{keyword}, '%');
+	</if>
+</select>
+
+
+<select id="listSido" resultMap="sidoDtoMap">
+	select sido_code, sido_name from sidos;
+</select>
+
+<select id="listGugun" parameterType="int" resultMap="gugunDtoMap">
+	select gugun_code, gugun_name from guguns
+	where sido_code = #{sidoCode}
+</select>
+
+<select id="listCategory" resultMap="categoryDtoMap">
+	select content_type_id, content_type_name from contenttypes;
+</select>
+
+</mapper>

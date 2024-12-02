@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper
+	namespace="com.ssafy.enjoytrip.members.model.mapper.MemberMapper">
+
+	<resultMap type="MemberDto" id="MemberResultMap">
+		<result column="user_id" property="userId" />
+		<result column="user_name" property="userName" />
+		<result column="user_password" property="userPassword" />
+		<result column="email_id" property="emailId" />
+		<result column="email_domain" property="emailDomain" />
+		<result column="gender" property="gender" />
+		<result column="birth" property="birth" />
+		<result column="profile_url" property="profileUrl" />
+		<result column="join_date" property="joinDate" />
+		<result column="token" property="token" />
+		<result column="role" property="role" />
+	</resultMap>
+
+	<!-- MemberResponseDto를 위한 ResultMap 추가 -->
+	<resultMap id="MemberResponseDto" type="MemberResponseDto">
+		<result column="user_id" property="userId" />
+		<result column="user_name" property="userName" />
+		<result column="email_id" property="emailId" />
+		<result column="email_domain" property="emailDomain" />
+		<result column="gender" property="gender" />
+		<result column="birth" property="birth" />
+		<result column="profile_url" property="profileUrl" />
+	</resultMap>
+
+	<select id="loginMember" parameterType="LoginRequestDto"
+		resultMap="MemberResultMap">
+		SELECT * FROM members
+		WHERE user_id = #{userId} AND
+		user_password = #{userPassword}
+	</select>
+	
+	<select id="getMemberAge" parameterType="String"
+		resultType="int">
+		SELECT ((YEAR(CURRENT_DATE()) - YEAR(birth)) DIV 10) * 10 from members where user_id = #{userId}
+	</select>
+	
+	<select id="getMyProfileInfo" parameterType="String"
+		resultMap="MemberResponseDto">
+		SELECT *from members where user_id = #{userId}
+	</select>
+
+	<insert id="joinMember" parameterType="JoinRequestDto">
+		INSERT INTO members
+		(user_id, user_name, user_password, email_id,
+		email_domain, gender,
+		birth)
+		VALUES (#{userId}, #{userName}, #{userPassword}, #{emailId},
+		#{emailDomain}, #{gender}, #{birth})
+	</insert>
+
+	<update id="modifyMember" parameterType="ModifyRequestDto">
+		UPDATE members
+		SET
+		user_name = #{userName},
+		user_password = #{userPassword},
+		email_id =
+		#{emailId},
+		email_domain = #{emailDomain},
+		profile_url = #{profileUrl}
+		WHERE
+		user_id = #{userId}
+	</update>
+
+	<delete id="deleteMember" parameterType="String">
+		DELETE FROM members
+		WHERE user_id = #{userId}
+	</delete>
+
+	<insert id="saveRefreshToken" parameterType="String">
+		UPDATE members
+		SET
+		token = #{refreshToken}
+		where
+		user_id = #{userId}
+	</insert>
+
+	<delete id="deleteRefreshToken" parameterType="String">
+		UPDATE members
+		SET
+		token = null
+		where
+		user_id = #{userId}
+	</delete>
+
+	<select id="selectRefreshTokenByMember" parameterType="String"
+		resultMap="MemberResultMap">
+		SELECT * FROM members
+		WHERE user_id = #{userId}
+		AND token =
+		#{refreshToken};
+	</select>
+
+	<!-- <select id="getUserProfile" parameterType="String" resultMap="MemberResultMap"> 
+		SELECT * FROM members WHERE user_id = #{userId} </select> -->
+
+</mapper>

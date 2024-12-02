@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.enjoytrip.messages.model.mapper.MessageMapper">
+
+	<resultMap type="MessageDto" id="MessageDtoMap">
+		<result column="message_id" property="messageId"/>
+		<result column="sender_id" property="senderId" />
+		<result column="content" property="content" />
+		<result column="created_at" property="createdAt" />
+	</resultMap>
+
+	<select id="getUserById" parameterType="String" resultType="String">
+		SELECT user_id
+		FROM members
+		WHERE user_id = #{userId}
+	</select>
+
+	<select id="getAllMessages" parameterType="String"
+		resultMap="MessageDtoMap">
+		SELECT me.message_id, me.sender_id, me.content, me.created_at, m.profile_url
+		FROM messages me
+		JOIN members m ON me.receiver_id = m.user_id
+		WHERE me.receiver_id = #{receiverId}
+		ORDER BY me.created_at DESC
+	</select>
+
+	<insert id="addMessages"
+		parameterType="MessageDto">
+		INSERT INTO messages
+		(sender_id,
+		receiver_id,
+		content)
+		VALUES
+		(#{senderId},
+		#{receiverId},
+		#{content})
+	</insert>
+
+	<delete id="deleteMessages" parameterType="int">
+		DELETE FROM messages
+		WHERE message_id = #{messageId}
+	</delete>
+
+</mapper>

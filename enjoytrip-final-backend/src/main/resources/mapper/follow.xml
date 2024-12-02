@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper
+	namespace="com.ssafy.enjoytrip.follows.model.mapper.FollowMapper">
+
+	<!-- 팔로우 정보를 화면에 표시하기 위한 ResultMap -->
+	<resultMap type="FollowResponseDto" id="FollowResponseMap">
+		<result column="user_id" property="userId" />       <!-- 사용자 ID -->
+		<result column="profile_url" property="profileUrl" /> <!-- 프로필 이미지 URL -->
+		<result column="is_following" property="isFollowing" /> <!-- 팔로우 여부 -->
+	</resultMap>
+
+	<!-- 기본 팔로우 정보를 위한 ResultMap -->
+	<resultMap type="FollowDto" id="FollowMap">
+		<result column="follow_id" property="followId" />
+		<result column="follower_id" property="followerId" />
+		<result column="following_id" property="followingId" />
+		<result column="created_at" property="createdAt" />
+	</resultMap>
+
+	<resultMap type="FollowListResponseDto" id="FollowListMap">
+		<result column="user_id" property="userId" />
+		<result column="profile_url" property="profileUrl" />
+	</resultMap>
+
+
+
+	<!-- follow-mapper.xml -->
+	<select id="getUserProfileUrl" resultType="String">
+		SELECT profile_url
+		FROM members
+		WHERE user_id = #{userId}
+	</select>
+
+	<select id="countFollowing" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		follows
+		WHERE follower_id = #{userId}
+	</select>
+
+	<select id="countFollowers" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		follows
+		WHERE following_id = #{userId}
+	</select>
+
+	<select id="checkFollowing" resultType="int">
+		SELECT COUNT(*)
+		FROM follows
+		WHERE follower_id = #{tokenId}      <!-- 첫 번째 파라미터 -->
+		AND following_id = #{userId}      <!-- 두 번째 파라미터 -->
+	</select>
+
+	<!-- 팔로우 관계 추가 -->
+	<insert id="addFollow">
+		INSERT INTO follows (
+		follower_id,
+		following_id
+		) VALUES
+		(
+		#{userId},
+		#{requestDto.followingId}
+		)
+	</insert>
+
+	<!-- 팔로우 관계 삭제 (언팔로우) -->
+	<delete id="deleteFollow" parameterType="map">
+		DELETE FROM follows
+		WHERE follower_id = #{userId}
+		AND following_id = #{followingId}
+	</delete>
+
+	<!-- 나를 팔로잉하는 사람들을 찾아야 팔로워 정보가 나온다. -->
+	<select id="findFollowersByUserId" parameterType="String"
+		resultMap="FollowListMap">
+		SELECT m.user_id, m.profile_url from follows f JOIN members
+		m
+		ON f.follower_id = m.user_id WHERE f.following_id = #{userId}
+	</select>
+
+	<select id="findFollowingsByUserId" parameterType="String"
+		resultMap="FollowListMap">
+		SELECT m.user_id, m.profile_url from follows f JOIN members
+		m
+		ON f.following_id = m.user_id WHERE f.follower_id = #{userId}
+	</select>
+
+
+
+</mapper>

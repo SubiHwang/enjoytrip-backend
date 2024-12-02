@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.enjoytrip.graph.model.mapper.GraphMapper">
+
+<resultMap type="KeywordRankDto" id="KeywordRankMap">
+	<result column="keyword" property="keyword"/>
+	<result column="search_count" property="searchCount"/>
+</resultMap>
+
+<resultMap type="KeywordRankWithAgeDto" id="KeywordRankWithAgeMap">
+	<result column="keyword" property="keyword"/>
+	<result column="search_count" property="searchCount"/>
+</resultMap>
+
+<insert id="saveKeywordHistory" parameterType="map">
+	insert into keywordhistories (user_id, keyword)
+	values (#{userId}, #{keyword});
+</insert>
+
+<select id="getKeywordSearchRanksByAll" resultMap="KeywordRankMap">
+	select keyword, count(*) as search_count
+	from keywordhistories k left join members m
+	on k.user_id = m.user_id
+	group by keyword
+	order by search_count desc
+	limit 5;
+</select>
+
+<select id="getKeywordSearchRanksByAllAge" resultMap="KeywordRankWithAgeMap">
+WITH BaseAge AS (
+    SELECT 
+        k.user_id,
+        k.keyword,
+        CASE
+            WHEN <![CDATA[  ((YEAR(CURRENT_DATE()) - YEAR(m.birth)) DIV 10) * 10 >= 60 ]]> THEN 60  -- 60대 이상은 60으로
+            WHEN ((YEAR(CURRENT_DATE()) - YEAR(m.birth)) DIV 10) * 10 = 0 THEN 10    -- 0대는 10으로
+            ELSE ((YEAR(CURRENT_DATE()) - YEAR(m.birth)) DIV 10) * 10
+        END as adjusted_age
+    FROM keywordhistories k
+    JOIN members m ON k.user_id = m.user_id
+),
+RankedKeywords AS (
+    SELECT 
+        adjusted_age as age,
+        keyword,
+        COUNT(*) as search_count,
+        ROW_NUMBER() OVER (
+            PARTITION BY adjusted_age
+            ORDER BY COUNT(*) DESC
+        ) as rn
+    FROM BaseAge
+    GROUP BY adjusted_age, keyword
+)
+SELECT age, keyword, search_count
+FROM RankedKeywords
+WHERE <![CDATA[ rn <= 3 ]]>
+ORDER BY age DESC, search_count DESC;
+</select>
+
+</mapper>

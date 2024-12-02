@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.enjoytrip.tripdiary.model.mapper.TripDiaryMapper">
+
+<resultMap type="tripDiaryCardDto" id="tripDiaryCardMap">
+	<result property="diaryId" column="diary_id"/>
+	<result property="thumbnailUrl" column="thumbnailUrl"/>
+	<result property="title" column="title"/>
+	<result property="startDate" column="start_date"/>
+	<result property="endDate" column="end_date"/>
+	<result property="profileUrl" column="profile_url"/>
+	<result property="userId" column="user_id"/>
+	<result property="isPublic" column="is_public"/>
+	<result property="likeCount" column="like_count"/>
+</resultMap>
+
+<resultMap type="tripDiaryDto" id="tripDiaryMap">
+   <result property="diaryId" column="diary_id"/>
+   <result property="userId" column="user_id"/>
+   <result property="title" column="title"/>
+   <result property="content" column="content"/>
+   <result property="thumbnailUrl" column="thumbnailUrl"/>
+   <result property="startDate" column="start_date"/>
+   <result property="endDate" column="end_date"/>
+   <result property="hasMap" column="has_map"/>
+   <result property="isPublic" column="is_public"/>
+   <result property="totalDays" column="total_days"/>
+   <result property="createdAt" column="created_at"/>
+</resultMap>
+
+<resultMap type="tripRouteDto" id="tripRouteMap">
+   <result property="routeId" column="route_id"/>
+   <result property="diaryId" column="diary_id"/>
+   <result property="attractionsNo" column="attractions_no"/>
+   <result property="detailStartTime" column="detail_start_time"/>
+   <result property="detailEndTime" column="detail_end_time"/>
+   <result property="day" column="day"/>
+   <result property="visitOrder" column="visit_order"/>
+   <result property="createdAt" column="created_at"/>
+</resultMap>
+
+<select id="getAllTripDiaries" resultMap="tripDiaryCardMap">
+	select td.diary_id, td.thumbnailUrl, td.title, td.start_date, td.end_date, m.user_id, m.profile_url, IFNULL(COUNT(dl.diary_id), 0) as like_count
+	from tripdiarys td left join diarylikes dl on td.diary_id = dl.diary_id 
+	join members m on td.user_id = m.user_id
+	where td.is_public = 1
+	group by td.diary_id
+	order by like_count desc;
+</select>
+
+<select id="getFollowingTripDiaries" parameterType="string" resultMap="tripDiaryCardMap">
+	select td.diary_id, td.title, td.thumbnailUrl, td.start_date, td.end_date, m.user_id, m.profile_url, IFNULL(COUNT(dl.diary_id), 0) as like_count
+	from tripdiarys td left join diarylikes dl on td.diary_id = dl.diary_id 
+	join members m on td.user_id = m.user_id
+	join follows f on f.following_id = m.user_id and f.follower_id = #{userId}
+	where td.is_public = 1
+	group by td.diary_id
+	order by td.start_date desc;
+</select>
+
+<select id="getMyTripDiaries" parameterType="string" resultMap="tripDiaryCardMap">
+	select td.diary_id, td.title, td.thumbnailUrl, td.start_date, td.end_date, m.user_id, m.profile_url, td.is_public, IFNULL(COUNT(dl.diary_id), 0) as like_count
+	from tripdiarys td left join diarylikes dl on td.diary_id = dl.diary_id
+	join members m on td.user_id = m.user_id
+	where td.user_id = #{userId}
+	group by td.diary_id
+	order by td.start_date desc;
+</select>
+
+<insert id="createTripDiary" parameterType="TripDiaryDto" useGeneratedKeys="true" keyProperty="diaryId">
+	insert into tripdiarys (user_id, title, content, thumbnailUrl, start_date, end_date, has_map, total_days)
+	values(#{userId}, #{title}, #{content}, #{thumbnailUrl}, #{startDate}, #{endDate}, #{hasMap}, #{totalDays});
+</insert>
+
+<insert id="createTripRoute" parameterType="tripRouteDto">
+	insert into triproutes (diary_id, attractions_no, detail_start_time, detail_end_time, day, visit_order)
+	values(#{diaryId}, #{attractionsNo}, #{detailStartTime}, #{detailEndTime}, #{day}, #{visitOrder});
+</insert>
+
+<select id="getTripDiary" parameterType="int" resultMap="tripDiaryMap">
+	select diary_id, user_id, title, content, thumbnailUrl, start_date, end_date, has_map, is_public, total_days, created_at
+    from tripdiarys
+    where diary_id = #{diaryId};
+</select>
+
+<select id="getTripRoute" resultMap="tripRouteMap">
+	select route_id, diary_id, attractions_no, detail_start_time, detail_end_time, day, visit_order, created_at
+    from triproutes
+    where diary_id = #{diaryId}
+</select>
+
+<update id="updateTripDiary" parameterType="TripDiaryDto">
+	update tripdiarys
+	set title = #{title}, content = #{content}, thumbnailUrl = #{thumbnailUrl}, start_date = #{startDate}, end_date = #{endDate}, has_map = #{hasMap}, total_days = #{totalDays}
+  	WHERE diary_id = #{diaryId}
+</update>
+
+<delete id="deleteTripDiary" parameterType="int">
+	delete from tripdiarys
+	where diary_id = #{diaryId};
+</delete>
+
+<delete id="deleteTripRoute" parameterType="int">
+	delete from triproutes
+	where diary_id = #{diaryId};
+</delete>
+
+<insert id="likeTripDiary" parameterType="map">
+	insert into diarylikes (user_id, diary_id)
+	values (#{userId}, #{diaryId});
+</insert>
+
+<select id="countLikeInfo" parameterType="map">
+	select count(*) from diarylikes
+	where user_id = #{userId} and diary_id = #{diaryId};
+</select>
+
+<delete id="unlikeTripDiary" parameterType="map">
+	delete from diarylikes
+	where user_id = #{userId} and diary_id = #{diaryId};
+</delete>
+
+<update id="updateShareStatusTripDiary" parameterType="map">
+	update tripdiarys
+	set is_public = #{shareStatus}
+	where diary_id = #{diaryId};
+</update>
+
+</mapper>
